@@ -22,7 +22,7 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
         rbm.zeroPower = Motor.ZeroPowerBehavior.Brake
     }
 
-    override fun move(direction: Double, power: Double, distance: Double?, turn: Double): Drive = if (distance != null) {
+    override fun move(direction: Double, power: Double, distance: Double?): Drive = if (distance != null) {
         val x = sin(direction * PI / 180).round(14)
         val y = cos(direction * PI / 180).round(14)
 
@@ -31,8 +31,7 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
         lbm.target((+y - x) * power, distance * distanceConstant)
         rbm.target((-y - x) * power, distance * distanceConstant)
 
-        while (lfm.busy || rfm.busy || lbm.busy || rbm.busy)
-            Thread.sleep(1)
+        while (lfm.busy || rfm.busy || lbm.busy || rbm.busy);
 
         this
     } else {
@@ -53,8 +52,7 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
         lbm.target(power, distance * rotationConstant)
         rbm.target(power, distance * rotationConstant)
 
-        while (lfm.busy || rfm.busy || lbm.busy || rbm.busy)
-            Thread.sleep(1)
+        while (lfm.busy || rfm.busy || lbm.busy || rbm.busy);
 
         this
     } else {

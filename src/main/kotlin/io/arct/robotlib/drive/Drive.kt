@@ -6,9 +6,9 @@ import io.arct.robotlib.robot.Robot
 interface Drive {
     val robot: Robot
 
-    fun move(direction: Double, power: Double, distance: Double? = null, turn: Double = 0.0): Drive
+    fun move(direction: Double, power: Double, distance: Double? = null): Drive
 
-    fun move(direction: Direction, power: Double, distance: Double? = null, turn: Double = 0.0) =
+    fun move(direction: Direction, power: Double, distance: Double? = null) =
         move(direction.value, power, distance)
 
     fun rotate(power: Double, distance: Double? = null): Drive

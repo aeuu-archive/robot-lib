@@ -73,7 +73,6 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
 
     override fun move(power: Double, position: Double): Motor {
         target(power, position)
-
         return wait()
     }
 
@@ -81,7 +80,7 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         oldMode = mode
         mode = Mode.Reset
 
-        targetPosition = ((if (power < 0) -1.0 else 1.0) * position * distanceConstant).toInt()
+        targetPosition = position.toInt() + ((if (power < 0) -1.0 else 1.0) * position * distanceConstant).toInt()
 
         mode = Mode.Position
         this.power = abs(power)

@@ -11,16 +11,25 @@ import kotlin.math.hypot
 class MecanumDrive(
     override val robot: Robot,
     vararg motors: Motor,
-    private var rotation: (() -> Number)? = null,
-    private var directionConstant: Double = 0.0
+
+    autoAlign: Boolean = true,
+    fieldCentric: Boolean = true,
+
+    var alignment: Double = 0.0,
+    private var rotation: (() -> Number)? = null
 ) : Drive {
     private val lfm: Motor = motors[0].also { it.direction = it.direction.inverse }
     private val rfm: Motor = motors[1]
     private val lbm: Motor = motors[2].also { it.direction = it.direction.inverse }
     private val rbm: Motor = motors[3]
 
-    var fieldCentric: Boolean = true
+    var fieldCentric: Boolean = fieldCentric
         get() = rotation != null && field
+
+    var autoAlign: Boolean = autoAlign
+        get() = fieldCentric && field
+
+    private var target: Double = rotation?.invoke()?.toDouble() ?: 0.0
 
     init {
         lfm.zeroPower = Motor.ZeroPowerBehavior.Brake
@@ -29,30 +38,28 @@ class MecanumDrive(
         rbm.zeroPower = Motor.ZeroPowerBehavior.Brake
     }
 
-    override fun move(direction: Double, power: Double, distance: Double?, turn: Double): MecanumDrive {
-        val dir = (direction + if (fieldCentric) rotation!!().toDouble() else 0.0) + directionConstant
+    override fun move(direction: Double, power: Double, distance: Double?): MecanumDrive {
+        val dir = (direction + if (fieldCentric) rotation!!().toDouble() else 0.0) + alignment
 
         val a = speed(-dir + 90)
         val b = speed(-dir)
 
-        val leftOffset = if (turn <= 0) -turn else 0.0
-        val rightOffset = if (turn >= 0) turn else 0.0
 
         if (distance != null) {
-            lfm.target((a * power) - leftOffset, distance * distanceConstant)
-            rfm.target((b * power) - rightOffset, distance * distanceConstant)
-            lbm.target((b * power) - leftOffset, distance * distanceConstant)
-            rbm.target((a * power) - rightOffset, distance * distanceConstant)
+            lfm.target(a * power, distance * distanceConstant)
+            rfm.target(b * power, distance * distanceConstant)
+            lbm.target(b * power, distance * distanceConstant)
+            rbm.target(a * power, distance * distanceConstant)
 
-            lfm.wait()
-            rfm.wait()
-            lbm.wait()
-            rbm.wait()
+            while (lfm.busy && rfm.busy && lbm.busy && rbm.busy);
+
+            if (autoAlign)
+                rotate(power, target - rotation!!().toDouble())
         } else {
-            lfm.power = (a * power) - leftOffset
-            rfm.power = (b * power) - rightOffset
-            lbm.power = (b * power) - leftOffset
-            rbm.power = (a * power) - rightOffset
+            lfm.power = a * power
+            rfm.power = b * power
+            lbm.power = b * power
+            rbm.power = a * power
         }
 
         return this
@@ -64,8 +71,7 @@ class MecanumDrive(
         rfm.target(-power, distance * rotationConstant)
         rbm.target(-power, distance * rotationConstant)
 
-        while (lfm.busy || rfm.busy || lbm.busy || rbm.busy)
-            Thread.sleep(1)
+        while (lfm.busy && rfm.busy && lbm.busy && rbm.busy);
 
         this
     } else {

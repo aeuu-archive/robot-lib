@@ -15,6 +15,9 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
     private val lbm: Motor = motors[2]
     private val rbm: Motor = motors[3]
 
+    var distanceConstant: Double = HolonomicDrive.distanceConstant
+    var rotationConstant: Double = HolonomicDrive.rotationConstant
+
     init {
         lfm.zeroPower = Motor.ZeroPowerBehavior.Brake
         rfm.zeroPower = Motor.ZeroPowerBehavior.Brake

@@ -8,17 +8,15 @@ import io.arct.robotlib.eventloop.ProgramLoop
 abstract class OperationMode : ProgramLoop {
     private val sdk: OpMode = current!!
 
-    override val robot: FtcRobot by lazy { FtcRobot(sdk) }
-    val log: Telemetry by lazy { Telemetry(sdk.telemetry) }
+    override val robot: FtcRobot = FtcRobot(sdk)
+    val log: Telemetry = Telemetry(sdk.telemetry)
 
     val time: Double
         get() = sdk.time
 
     override fun exit(): Nothing {
         sdk.requestOpModeStop()
-
-        while (true)
-            Thread.sleep(100)
+        while (true);
     }
 
     open fun initLoop() {}

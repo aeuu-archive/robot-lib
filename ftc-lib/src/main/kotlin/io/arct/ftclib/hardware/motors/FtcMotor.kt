@@ -2,50 +2,24 @@ package io.arct.ftclib.hardware.motors
 
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorController
-import com.qualcomm.robotcore.hardware.DcMotorEx
+import io.arct.ftclib.hardware.FtcDevice
 import io.arct.ftclib.hardware.controllers.FtcMotorController
 import io.arct.ftclib.internal.fromSdk
 import io.arct.ftclib.internal.toSdk
 import io.arct.robotlib.hardware.motors.Motor
-import io.arct.robotlib.hardware.motors.Motor.Companion.distanceConstant
 import io.arct.robotlib.hardware.motors.Motor.ZeroPowerBehavior
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlin.concurrent.thread
 import kotlin.math.abs
 
 open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>(sdk), Motor {
-    private val ext: DcMotorEx?
-        get() = if (extended) sdk as DcMotorEx else null
+    var encoder: Boolean
+        get() = sdk.mode == DcMotor.RunMode.RUN_USING_ENCODER
+        set(value) { sdk.mode = if (value) DcMotor.RunMode.RUN_USING_ENCODER else DcMotor.RunMode.RUN_WITHOUT_ENCODER }
 
-    private var oldMode: Mode = mode
+    private var targetPosition: Double = 0.0
 
-    var enabled: Boolean?
-        get() = ext?.isMotorEnabled
-        set(v) {
-            if (v == true) ext?.setMotorEnable() else ext?.setMotorDisable()
-        }
-
-    val extended: Boolean
-        get() = sdk is DcMotorEx
-
-    var mode: Mode
-        get() = fromSdk(sdk.mode)
-        set(v) {
-            sdk.mode = toSdk(v)
-        }
-
-    var targetPosition: Int
-        get() = sdk.targetPosition
-        set(v) {
-            sdk.targetPosition = v
-        }
-
-    var targetPositionTolerance: Int?
-        get() = ext?.targetPositionTolerance
-        set(v) {
-            if (v != null) ext?.targetPositionTolerance = v
-        }
+    var adjustmentPower: Double = FtcMotor.adjustmentPower
+    var targetPositionTolerance: Double = FtcMotor.targetPositionTolerance
+    var distanceConstant: Double = Motor.distanceConstant
 
     override val busy: Boolean
         get() = sdk.isBusy
@@ -59,17 +33,16 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
     override val position: Int
         get() = sdk.currentPosition
 
-    override var velocity: Double?
-        get() = ext?.velocity
-        set(v) {
-            if (v != null) ext?.velocity = v
-        }
-
     override var zeroPower: ZeroPowerBehavior
         get() = fromSdk(sdk.zeroPowerBehavior)
         set(v) {
             sdk.zeroPowerBehavior = toSdk(v)
         }
+
+    init {
+        sdk.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
+        sdk.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    }
 
     override fun move(power: Double, position: Double): Motor {
         target(power, position)
@@ -77,31 +50,58 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
     }
 
     override fun target(power: Double, position: Double): Motor {
-        oldMode = mode
-        mode = Mode.Reset
+        if (!encoder)
+            encoder = true
 
-        targetPosition = position.toInt() + ((if (power < 0) -1.0 else 1.0) * position * distanceConstant).toInt()
+        reset()
 
-        mode = Mode.Position
-        this.power = abs(power)
+        targetPosition = abs(position * distanceConstant)
+        this.power =  (if (position < 0) -1.0 else 1.0) * power
 
         return this
     }
 
-    override fun wait(): Motor {
-        while (busy);
+    fun waitTarget() {
+        while (abs(position) < targetPosition - targetPositionTolerance);
+        stop()
+    }
 
-        mode = oldMode
+    fun readjust() {
+        var range = (abs(position) - targetPositionTolerance)..(abs(position) + targetPositionTolerance)
+
+        while (!range.contains(abs(position).toDouble())) {
+            if (abs(position) > targetPosition)
+                power = (if (position < 0) 1.0 else -1.0) * abs(adjustmentPower)
+
+            if (abs(position) < targetPosition)
+                power = (if (position > 0) 1.0 else -1.0) * abs(adjustmentPower)
+
+            range = (abs(position) - targetPositionTolerance)..(abs(position) + targetPositionTolerance)
+        }
+
         stop()
 
+        if (!range.contains(abs(position).toDouble()))
+            readjust()
+    }
+
+
+    override fun wait(): Motor {
+        waitTarget()
+        readjust()
         return this
     }
 
-    enum class Mode {
-        Position,
-        Encoder,
-        Simple,
-        Reset,
-        Unknown;
+    override fun reset(): FtcDevice<T> {
+        val mode = sdk.mode
+        sdk.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
+        sdk.mode = mode
+
+        return this
+    }
+
+    companion object {
+        var adjustmentPower: Double = 0.1
+        var targetPositionTolerance: Double = 0.0
     }
 }

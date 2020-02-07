@@ -8,22 +8,6 @@ import io.arct.ftclib.hardware.motors.FtcMotor
 import io.arct.robotlib.hardware.motors.BasicMotor
 import io.arct.robotlib.hardware.motors.Motor
 
-internal fun fromSdk(value: DcMotor.RunMode): FtcMotor.Mode = when (value) {
-    DcMotor.RunMode.RUN_TO_POSITION -> FtcMotor.Mode.Position
-    DcMotor.RunMode.RUN_USING_ENCODER -> FtcMotor.Mode.Encoder
-    DcMotor.RunMode.RUN_WITHOUT_ENCODER -> FtcMotor.Mode.Simple
-    DcMotor.RunMode.STOP_AND_RESET_ENCODER -> FtcMotor.Mode.Reset
-    else -> FtcMotor.Mode.Unknown
-}
-
-internal fun toSdk(value: FtcMotor.Mode): DcMotor.RunMode? = when (value) {
-    FtcMotor.Mode.Position -> DcMotor.RunMode.RUN_TO_POSITION
-    FtcMotor.Mode.Encoder -> DcMotor.RunMode.RUN_USING_ENCODER
-    FtcMotor.Mode.Simple -> DcMotor.RunMode.RUN_WITHOUT_ENCODER
-    FtcMotor.Mode.Reset -> DcMotor.RunMode.STOP_AND_RESET_ENCODER
-    else -> null
-}
-
 internal fun fromSdk(value: DcMotor.ZeroPowerBehavior): Motor.ZeroPowerBehavior = when (value) {
     DcMotor.ZeroPowerBehavior.BRAKE -> Motor.ZeroPowerBehavior.Brake
     DcMotor.ZeroPowerBehavior.FLOAT -> Motor.ZeroPowerBehavior.Coast

@@ -7,7 +7,6 @@ interface Motor : BasicMotor {
     val controller: MotorController
     val port: Int
     val position: Int
-    var velocity: Double?
     var zeroPower: ZeroPowerBehavior
 
     fun move(power: Double, position: Double): Motor

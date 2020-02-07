@@ -1,6 +1,7 @@
 package io.arct.ftclib.drive
 
 import io.arct.ftclib.hardware.gamepad.Gamepad
+import io.arct.ftclib.hardware.motors.FtcMotor
 import io.arct.robotlib.drive.Drive
 import io.arct.robotlib.extensions.map
 import io.arct.robotlib.hardware.motors.Motor
@@ -10,7 +11,7 @@ import kotlin.math.hypot
 
 class MecanumDrive(
     override val robot: Robot,
-    vararg motors: Motor,
+    vararg motors: FtcMotor<*>,
 
     autoAlign: Boolean = true,
     fieldCentric: Boolean = true,
@@ -18,10 +19,13 @@ class MecanumDrive(
     var alignment: Double = 0.0,
     private var rotation: (() -> Number)? = null
 ) : Drive {
-    private val lfm: Motor = motors[0].also { it.direction = it.direction.inverse }
-    private val rfm: Motor = motors[1]
-    private val lbm: Motor = motors[2].also { it.direction = it.direction.inverse }
-    private val rbm: Motor = motors[3]
+    private val lfm: FtcMotor<*> = motors[0].also { it.direction = it.direction.inverse }
+    private val rfm: FtcMotor<*> = motors[1]
+    private val lbm: FtcMotor<*> = motors[2].also { it.direction = it.direction.inverse }
+    private val rbm: FtcMotor<*> = motors[3]
+
+    var distanceConstant: Double = MecanumDrive.distanceConstant
+    var rotationConstant: Double = MecanumDrive.rotationConstant
 
     var fieldCentric: Boolean = fieldCentric
         get() = rotation != null && field
@@ -51,7 +55,15 @@ class MecanumDrive(
             lbm.target(b * power, distance * distanceConstant)
             rbm.target(a * power, distance * distanceConstant)
 
-            while (lfm.busy && rfm.busy && lbm.busy && rbm.busy);
+            lfm.waitTarget()
+            rfm.waitTarget()
+            lbm.waitTarget()
+            rbm.waitTarget()
+
+            lfm.readjust()
+            rfm.readjust()
+            lbm.readjust()
+            rbm.readjust()
 
             if (autoAlign)
                 rotate(power, target - rotation!!().toDouble())
@@ -71,7 +83,15 @@ class MecanumDrive(
         rfm.target(-power, distance * rotationConstant)
         rbm.target(-power, distance * rotationConstant)
 
-        while (lfm.busy && rfm.busy && lbm.busy && rbm.busy);
+        lfm.waitTarget()
+        rfm.waitTarget()
+        lbm.waitTarget()
+        rbm.waitTarget()
+
+        lfm.readjust()
+        rfm.readjust()
+        lbm.readjust()
+        rbm.readjust()
 
         this
     } else {

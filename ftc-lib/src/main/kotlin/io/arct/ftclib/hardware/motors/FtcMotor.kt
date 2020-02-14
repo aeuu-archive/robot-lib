@@ -15,8 +15,6 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         get() = sdk.mode == DcMotor.RunMode.RUN_USING_ENCODER
         set(value) { sdk.mode = if (value) DcMotor.RunMode.RUN_USING_ENCODER else DcMotor.RunMode.RUN_WITHOUT_ENCODER }
 
-    private var targetPosition: Double = 0.0
-
     var adjustmentPower: Double = FtcMotor.adjustmentPower
     var targetPositionTolerance: Double = FtcMotor.targetPositionTolerance
     var distanceConstant: Double = Motor.distanceConstant
@@ -30,8 +28,8 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
     override val port: Int
         get() = sdk.portNumber
 
-    override val position: Int
-        get() = sdk.currentPosition
+    override val position: Double
+        get() = sdk.currentPosition.toDouble()
 
     override var zeroPower: ZeroPowerBehavior
         get() = fromSdk(sdk.zeroPowerBehavior)
@@ -44,52 +42,14 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         sdk.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
     }
 
-    override fun move(power: Double, position: Double): Motor {
-        target(power, position)
-        return wait()
-    }
+    override fun move(power: Double, position: Double): Motor =
+        target(position).run(power).motor
 
-    override fun target(power: Double, position: Double): Motor {
+    override fun target(position: Double): Target {
         if (!encoder)
             encoder = true
 
-        reset()
-
-        targetPosition = abs(position * distanceConstant)
-        this.power =  (if (position < 0) -1.0 else 1.0) * power
-
-        return this
-    }
-
-    fun waitTarget() {
-        while (abs(position) < targetPosition - targetPositionTolerance);
-        stop()
-    }
-
-    fun readjust() {
-        var range = (abs(position) - targetPositionTolerance)..(abs(position) + targetPositionTolerance)
-
-        while (!range.contains(abs(position).toDouble())) {
-            if (abs(position) > targetPosition)
-                power = (if (position < 0) 1.0 else -1.0) * abs(adjustmentPower)
-
-            if (abs(position) < targetPosition)
-                power = (if (position > 0) 1.0 else -1.0) * abs(adjustmentPower)
-
-            range = (abs(position) - targetPositionTolerance)..(abs(position) + targetPositionTolerance)
-        }
-
-        stop()
-
-        if (!range.contains(abs(position).toDouble()))
-            readjust()
-    }
-
-
-    override fun wait(): Motor {
-        waitTarget()
-        readjust()
-        return this
+        return Target(this, abs(position * distanceConstant))
     }
 
     override fun reset(): FtcDevice<T> {
@@ -98,6 +58,73 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         sdk.mode = mode
 
         return this
+    }
+
+    class Target internal constructor(
+        override val motor: FtcMotor<*>,
+        override val position: Double
+    ) : Motor.Target {
+        private var running: Boolean = false
+
+        override val power: Double = 1.0
+
+        override fun start(power: Double?): Target {
+            if (!motor.encoder)
+                motor.encoder = true
+
+            motor.reset()
+
+            running = true
+            motor.power = power ?: this.power
+
+            return this
+        }
+
+        override fun run(power: Double?): Target =
+            start(power).await()
+
+        override fun stop(): Target {
+            running = false
+            motor.stop()
+
+            return this
+        }
+
+        override fun await(): Target {
+            waitTarget()
+            adjust()
+
+            return this
+        }
+
+        fun waitTarget(): Target {
+            while (running && abs(motor.position) < position - motor.targetPositionTolerance);
+            motor.stop()
+
+            return this
+        }
+
+        fun adjust(): Target {
+            var range = (abs(motor.position) - motor.targetPositionTolerance)..(abs(motor.position) + motor.targetPositionTolerance)
+
+            while (running && !range.contains(abs(position))) {
+                if (abs(motor.position) > position)
+                    motor.power = (if (position < 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
+
+                if (abs(position) < position)
+                    motor.power = (if (position > 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
+
+                range = (abs(motor.position) - motor.targetPositionTolerance)..(abs(motor.position) + motor.targetPositionTolerance)
+            }
+
+            motor.stop()
+
+            if (running && !range.contains(abs(motor.position)))
+                adjust()
+
+            running = false
+            return this
+        }
     }
 
     companion object {

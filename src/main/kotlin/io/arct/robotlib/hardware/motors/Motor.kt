@@ -6,12 +6,11 @@ interface Motor : BasicMotor {
     val busy: Boolean
     val controller: MotorController
     val port: Int
-    val position: Int
+    val position: Double
     var zeroPower: ZeroPowerBehavior
 
     fun move(power: Double, position: Double): Motor
-    fun target(power: Double, position: Double): Motor
-    fun wait(): Motor
+    fun target(position: Double): Target
 
     fun stop(): Motor {
         power = 0.0
@@ -22,6 +21,18 @@ interface Motor : BasicMotor {
         Coast,
         Brake,
         Unknown;
+    }
+
+    interface Target {
+        val motor: Motor
+
+        val position: Double
+        val power: Double
+
+        fun start(power: Double? = null): Target
+        fun run(power: Double? = null): Target
+        fun stop(): Target
+        fun await(): Target
     }
 
     companion object {

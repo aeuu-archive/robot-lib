@@ -50,20 +50,16 @@ class MecanumDrive(
 
 
         if (distance != null) {
-            lfm.target(a * power, distance * distanceConstant)
-            rfm.target(b * power, distance * distanceConstant)
-            lbm.target(b * power, distance * distanceConstant)
-            rbm.target(a * power, distance * distanceConstant)
-
-            lfm.waitTarget()
-            rfm.waitTarget()
-            lbm.waitTarget()
-            rbm.waitTarget()
-
-            lfm.readjust()
-            rfm.readjust()
-            lbm.readjust()
-            rbm.readjust()
+            listOf(
+                lfm.target(distance * distanceConstant).start(a * power),
+                rfm.target(distance * distanceConstant).start(b * power),
+                lbm.target(distance * distanceConstant).start(b * power),
+                rbm.target(distance * distanceConstant).start(a * power)
+            ).reversed().map {
+                it.waitTarget()
+            }.map {
+                it.adjust()
+            }
 
             if (autoAlign)
                 rotate(power, target - rotation!!().toDouble())
@@ -78,20 +74,16 @@ class MecanumDrive(
     }
 
     override fun rotate(power: Double, distance: Double?) = if (distance != null) {
-        lfm.target(power, distance * rotationConstant)
-        lbm.target(power, distance * rotationConstant)
-        rfm.target(-power, distance * rotationConstant)
-        rbm.target(-power, distance * rotationConstant)
-
-        lfm.waitTarget()
-        rfm.waitTarget()
-        lbm.waitTarget()
-        rbm.waitTarget()
-
-        lfm.readjust()
-        rfm.readjust()
-        lbm.readjust()
-        rbm.readjust()
+        listOf(
+            lfm.target(distance * rotationConstant).start(power),
+            lbm.target( distance * rotationConstant).start(power),
+            rfm.target(distance * rotationConstant).start(-power),
+            rbm.target(distance * rotationConstant).start(-power)
+        ).reversed().map {
+            it.waitTarget()
+        }.map {
+            it.adjust()
+        }
 
         this
     } else {

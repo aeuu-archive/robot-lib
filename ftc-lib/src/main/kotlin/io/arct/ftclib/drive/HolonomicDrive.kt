@@ -29,10 +29,10 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
         val x = sin(direction * PI / 180).round(14)
         val y = cos(direction * PI / 180).round(14)
 
-        lfm.target((+y + x) * power, distance * distanceConstant)
-        rfm.target((-y + x) * power, distance * distanceConstant)
-        lbm.target((+y - x) * power, distance * distanceConstant)
-        rbm.target((-y - x) * power, distance * distanceConstant)
+        lfm.target(distance * distanceConstant).start((+y + x) * power)
+        rfm.target(distance * distanceConstant).start((-y + x) * power)
+        lbm.target(distance * distanceConstant).start((+y - x) * power)
+        rbm.target(distance * distanceConstant).start((-y - x) * power)
 
         while (lfm.busy || rfm.busy || lbm.busy || rbm.busy);
 
@@ -50,10 +50,10 @@ class HolonomicDrive(override val robot: Robot, vararg motors: Motor) : Drive {
     }
 
     override fun rotate(power: Double, distance: Double?): Drive = if (distance != null) {
-        lfm.target(power, distance * rotationConstant)
-        rfm.target(power, distance * rotationConstant)
-        lbm.target(power, distance * rotationConstant)
-        rbm.target(power, distance * rotationConstant)
+        lfm.target(distance * rotationConstant).start(power)
+        rfm.target(distance * rotationConstant).start(power)
+        lbm.target(distance * rotationConstant).start(power)
+        rbm.target(distance * rotationConstant).start(power)
 
         while (lfm.busy || rfm.busy || lbm.busy || rbm.busy);
 

@@ -13,11 +13,19 @@ import kotlin.math.abs
 open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>(sdk), Motor {
     var encoder: Boolean
         get() = sdk.mode == DcMotor.RunMode.RUN_USING_ENCODER
-        set(value) { sdk.mode = if (value) DcMotor.RunMode.RUN_USING_ENCODER else DcMotor.RunMode.RUN_WITHOUT_ENCODER }
+        set(value) {
+            if (value != encoder)
+                sdk.mode = if (value) DcMotor.RunMode.RUN_USING_ENCODER else DcMotor.RunMode.RUN_WITHOUT_ENCODER
+        }
 
-    var adjustmentPower: Double = FtcMotor.adjustmentPower
-    var targetPositionTolerance: Double = FtcMotor.targetPositionTolerance
-    var distanceConstant: Double = Motor.distanceConstant
+    var adjustmentPower: Double = Constants.adjustmentPower
+        set(v) { field = abs(v) }
+
+    var targetPositionTolerance: Double = Constants.targetPositionTolerance
+        set(v) { field = abs(v) }
+
+    var distanceConstant: Double = Motor.Constants.distance
+        set(v) { field = abs(v) }
 
     override val busy: Boolean
         get() = sdk.isBusy
@@ -49,7 +57,7 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         if (!encoder)
             encoder = true
 
-        return Target(this, abs(position * distanceConstant))
+        return Target(this, abs(position))
     }
 
     override fun reset(): FtcDevice<T> {
@@ -62,25 +70,39 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
 
     class Target internal constructor(
         override val motor: FtcMotor<*>,
-        override val position: Double
+        position: Double
     ) : Motor.Target {
         private var running: Boolean = false
 
-        override val power: Double = 1.0
+        private val posNeg: Double = if (position < 0) -1.0 else 1.0
+        override val position: Double = abs(position * motor.distanceConstant)
 
-        override fun start(power: Double?): Target {
+        private val motorPos: Double get() = abs(motor.position)
+
+        fun init(): Target {
             if (!motor.encoder)
                 motor.encoder = true
 
             motor.reset()
+            return this
+        }
 
+        fun power(power: Double): Target {
             running = true
-            motor.power = power ?: this.power
+            motor.power = posNeg * power
 
             return this
         }
 
-        override fun run(power: Double?): Target =
+        fun waitTarget(): Target {
+            while (running && motorPos < position - motor.targetPositionTolerance);
+            return this
+        }
+
+        override fun start(power: Double): Target =
+            init().power(power)
+
+        override fun run(power: Double): Target =
             start(power).await()
 
         override fun stop(): Target {
@@ -92,29 +114,22 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
 
         override fun await(): Target {
             waitTarget()
+            motor.stop()
             adjust()
 
             return this
         }
 
-        fun waitTarget(): Target {
-            while (running && abs(motor.position) < position - motor.targetPositionTolerance);
-            motor.stop()
-
-            return this
-        }
-
         fun adjust(): Target {
-            var range = (abs(motor.position) - motor.targetPositionTolerance)..(abs(motor.position) + motor.targetPositionTolerance)
+            while (running) {
+                if (range.contains(motor.position))
+                    break
 
-            while (running && !range.contains(abs(position))) {
-                if (abs(motor.position) > position)
-                    motor.power = (if (position < 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
+                if (motorPos > position)
+                    motor.power = (if (motor.position < 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
 
-                if (abs(position) < position)
-                    motor.power = (if (position > 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
-
-                range = (abs(motor.position) - motor.targetPositionTolerance)..(abs(motor.position) + motor.targetPositionTolerance)
+                if (motorPos < position)
+                    motor.power = (if (motor.position > 0) 1.0 else -1.0) * abs(motor.adjustmentPower)
             }
 
             motor.stop()
@@ -125,10 +140,15 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
             running = false
             return this
         }
+
+        private val range get() = (motorPos - motor.targetPositionTolerance)..(motorPos + motor.targetPositionTolerance)
     }
 
-    companion object {
+    object Constants {
         var adjustmentPower: Double = 0.1
+            set(v) { field = abs(v) }
+
         var targetPositionTolerance: Double = 0.0
+            set(v) { field = abs(v) }
     }
 }

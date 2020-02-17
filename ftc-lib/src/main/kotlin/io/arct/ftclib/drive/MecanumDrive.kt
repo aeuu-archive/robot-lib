@@ -13,7 +13,7 @@ class MecanumDrive(
     override val robot: Robot,
     vararg motors: FtcMotor<*>,
 
-    autoAlign: Boolean = true,
+    var autoAlign: Boolean = true,
     fieldCentric: Boolean = true,
 
     var alignment: Double = 0.0,
@@ -24,14 +24,11 @@ class MecanumDrive(
     private val lbm: FtcMotor<*> = motors[2].also { it.direction = it.direction.inverse }
     private val rbm: FtcMotor<*> = motors[3]
 
-    var distanceConstant: Double = MecanumDrive.distanceConstant
-    var rotationConstant: Double = MecanumDrive.rotationConstant
+    var distanceConstant: Double = Constants.distance
+    var rotationConstant: Double = Constants.rotation
 
     var fieldCentric: Boolean = fieldCentric
         get() = rotation != null && field
-
-    var autoAlign: Boolean = autoAlign
-        get() = fieldCentric && field
 
     private var target: Double = rotation?.invoke()?.toDouble() ?: 0.0
 
@@ -48,17 +45,21 @@ class MecanumDrive(
         val a = speed(-dir + 90)
         val b = speed(-dir)
 
-
         if (distance != null) {
             listOf(
-                lfm.target(distance * distanceConstant).start(a * power),
-                rfm.target(distance * distanceConstant).start(b * power),
-                lbm.target(distance * distanceConstant).start(b * power),
-                rbm.target(distance * distanceConstant).start(a * power)
-            ).reversed().map {
+                lfm.target(distance * distanceConstant),
+                rfm.target(distance * distanceConstant),
+                lbm.target(distance * distanceConstant),
+                rbm.target(distance * distanceConstant)
+            ).map {
+                it.init()
+            }.mapIndexed { index, it ->
+                val pwr = if (index == 0 || index == 3) a else b
+                it.power(pwr * power)
+            }.reversed().map {
                 it.waitTarget()
             }.map {
-                it.adjust()
+                it.stop()
             }
 
             if (autoAlign)
@@ -75,14 +76,19 @@ class MecanumDrive(
 
     override fun rotate(power: Double, distance: Double?) = if (distance != null) {
         listOf(
-            lfm.target(distance * rotationConstant).start(power),
-            lbm.target( distance * rotationConstant).start(power),
-            rfm.target(distance * rotationConstant).start(-power),
-            rbm.target(distance * rotationConstant).start(-power)
-        ).reversed().map {
+            lfm.target(distance * rotationConstant),
+            lbm.target(distance * rotationConstant),
+            rfm.target(distance * rotationConstant),
+            rbm.target(distance * rotationConstant)
+        ).map {
+            it.init()
+        }.mapIndexed { index, it ->
+            val pwr = if (index == 0 || index == 1) 1 else -1
+            it.power(pwr * power)
+        }.reversed().map {
             it.waitTarget()
         }.map {
-            it.adjust()
+            it.stop()
         }
 
         this
@@ -142,13 +148,13 @@ class MecanumDrive(
             else ->
                 move(
                     Angles.fromCoordinates(precision.x, precision.y),
-                    hypot(precision.x, precision.y).map(0.0..1.0, 0.0..0.3)
+                    hypot(precision.x, precision.y).map(-1.0..1.0, -0.5..0.5)
                 )
         }
     }
 
-    companion object {
-        var distanceConstant = 1.0
-        var rotationConstant = 1.0
+    object Constants {
+        var distance = 1.0
+        var rotation = 1.0
     }
 }

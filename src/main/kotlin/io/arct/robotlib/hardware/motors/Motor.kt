@@ -1,6 +1,7 @@
 package io.arct.robotlib.hardware.motors
 
 import io.arct.robotlib.hardware.controllers.MotorController
+import kotlin.math.abs
 
 interface Motor : BasicMotor {
     val busy: Boolean
@@ -27,15 +28,15 @@ interface Motor : BasicMotor {
         val motor: Motor
 
         val position: Double
-        val power: Double
 
-        fun start(power: Double? = null): Target
-        fun run(power: Double? = null): Target
+        fun start(power: Double): Target
+        fun run(power: Double): Target
         fun stop(): Target
         fun await(): Target
     }
 
-    companion object {
-        var distanceConstant = 4.0
+    object Constants {
+        var distance = 4.0
+            set(v) { field = abs(v) }
     }
 }

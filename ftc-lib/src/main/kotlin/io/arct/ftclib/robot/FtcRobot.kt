@@ -7,10 +7,10 @@ import io.arct.robotlib.robot.HardwareMap
 import io.arct.robotlib.robot.Robot
 import io.arct.robotlib.robot.device
 
-class FtcRobot internal constructor(opMode: OperationMode) : Robot {
-    override val hardware: HardwareMap = FtcHardwareMap(opMode)
+class FtcRobot internal constructor(opMode: OperationMode, sdk: OpMode) : Robot {
+    override val hardware: HardwareMap = FtcHardwareMap(opMode, sdk)
 
-    val __sdk__opMode: OpMode = opMode.sdk
+    val __sdk__opMode: OpMode = sdk
 
     val gamepad: List<Gamepad> = listOf(
         this device "gamepad 0",

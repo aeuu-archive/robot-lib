@@ -6,7 +6,8 @@ import io.arct.ftclib.hardware.controllers.FtcServoController
 import io.arct.robotlib.hardware.controllers.ServoController
 import io.arct.robotlib.hardware.motors.Servo
 
-open class FtcServo<T: com.qualcomm.robotcore.hardware.Servo> internal constructor(sdk: T, private val opMode: OperationMode) : FtcDevice<T>(sdk, opMode), Servo {
+open class FtcServo<T : com.qualcomm.robotcore.hardware.Servo> internal constructor(sdk: T, opMode: OperationMode) :
+    FtcDevice<T>(sdk, opMode), Servo {
     override val controller: ServoController
         get() = FtcServoController(sdk.controller, opMode)
 

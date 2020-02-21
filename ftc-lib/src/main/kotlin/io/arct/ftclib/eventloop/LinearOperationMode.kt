@@ -1,12 +1,10 @@
 package io.arct.ftclib.eventloop
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import io.arct.robotlib.eventloop.Program
-import kotlin.reflect.full.primaryConstructor
 
 abstract class LinearOperationMode : OperationMode(), Program {
-    override val sdk: LinearOpMode = (current as LinearOpMode?)!!
+    private val sdk: LinearOpMode = (current as LinearOpMode?)!!
 
     val started: Boolean
         get() = sdk.isStarted

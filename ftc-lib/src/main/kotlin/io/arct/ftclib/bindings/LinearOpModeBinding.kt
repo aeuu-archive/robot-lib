@@ -1,7 +1,6 @@
 package io.arct.ftclib.bindings
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import io.arct.ftclib.eventloop.LinearOperationMode
 import io.arct.ftclib.eventloop.OperationMode
 

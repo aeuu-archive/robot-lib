@@ -12,7 +12,8 @@ import io.arct.robotlib.hardware.motors.Motor
 import io.arct.robotlib.hardware.motors.Motor.ZeroPowerBehavior
 import kotlin.math.abs
 
-open class FtcMotor<T : DcMotor> internal constructor(sdk: T, private val opMode: OperationMode) : FtcBasicMotor<T>(sdk, opMode), Motor {
+open class FtcMotor<T : DcMotor> internal constructor(sdk: T, opMode: OperationMode) : FtcBasicMotor<T>(sdk, opMode),
+    Motor {
     var encoder: Boolean
         get() = sdk.mode == DcMotor.RunMode.RUN_USING_ENCODER
         set(value) {
@@ -21,7 +22,9 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T, private val opMode
         }
 
     var adjustmentPower: Double = Constants.adjustmentPower
-        set(v) { field = abs(v) }
+        set(v) {
+            field = abs(v)
+        }
 
     var targetPositionTolerance: Double = Constants.targetPositionTolerance
         set(v) { field = abs(v) }
@@ -97,10 +100,9 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T, private val opMode
         }
 
         fun waitTarget(): Target {
-            while (
-                (if (motor.opMode is LinearOperationMode) motor.opMode.active else true) &&
-                running && motorPos < position - motor.targetPositionTolerance
-            );
+            while (motor.active && running && motorPos < position - motor.targetPositionTolerance)
+                if (motor.opMode is LinearOperationMode)
+                    motor.opMode.sleep(5)
 
             return this
         }
@@ -127,10 +129,7 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T, private val opMode
         }
 
         fun adjust(): Target {
-            while (
-                (if (motor.opMode is LinearOperationMode) motor.opMode.active else true) &&
-                running
-            ) {
+            while (motor.active && running) {
                 if (range.contains(motor.position))
                     break
 

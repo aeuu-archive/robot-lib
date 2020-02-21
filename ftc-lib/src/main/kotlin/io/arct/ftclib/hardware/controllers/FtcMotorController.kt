@@ -1,13 +1,15 @@
 package io.arct.ftclib.hardware.controllers
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import com.qualcomm.robotcore.hardware.DcMotorController
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.ftclib.internal.fromSdk
 import io.arct.ftclib.internal.toSdk
 import io.arct.robotlib.hardware.controllers.MotorController
 import io.arct.robotlib.hardware.motors.Motor
 
-open class FtcMotorController<T : DcMotorController> internal constructor(sdk: T, private val port: Int) : FtcDevice<T>(sdk), MotorController {
+open class FtcMotorController<T : DcMotorController> internal constructor(sdk: T, opMode: OperationMode, private val port: Int) : FtcDevice<T>(sdk, opMode), MotorController {
     override var power: Double
         get() = sdk.getMotorPower(port)
         set(v) { sdk.setMotorPower(port, v) }

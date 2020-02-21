@@ -1,9 +1,10 @@
 package io.arct.ftclib.hardware.sensors
 
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.robotlib.hardware.sensors.GyroSensor
 
-open class FtcGyroSensor<T : com.qualcomm.robotcore.hardware.GyroSensor> internal constructor(sdk: T) : FtcDevice<T>(sdk), GyroSensor {
+open class FtcGyroSensor<T : com.qualcomm.robotcore.hardware.GyroSensor> internal constructor(sdk: T, opMode: OperationMode) : FtcDevice<T>(sdk, opMode), GyroSensor {
     val heading: Int
         get() = sdk.heading
 

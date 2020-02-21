@@ -1,11 +1,12 @@
 package io.arct.ftclib.hardware.devices
 
 import com.qualcomm.robotcore.hardware.DigitalChannel
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.robotlib.hardware.devices.DigitalDevice
 import io.arct.robotlib.hardware.devices.DigitalDevice.Mode
 
-open class FtcDigitalDevice<T : DigitalChannel> internal constructor(sdk: T) : FtcDevice<T>(sdk), DigitalDevice {
+open class FtcDigitalDevice<T : DigitalChannel> internal constructor(sdk: T, opMode: OperationMode) : FtcDevice<T>(sdk, opMode), DigitalDevice {
     private var modeBoth = true
 
     override var value

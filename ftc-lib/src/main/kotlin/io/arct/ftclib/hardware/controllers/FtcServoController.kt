@@ -1,10 +1,11 @@
 package io.arct.ftclib.hardware.controllers
 
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.robotlib.hardware.controllers.ServoController
 import io.arct.robotlib.hardware.controllers.ServoController.PwmStatus
 
-open class FtcServoController<T : com.qualcomm.robotcore.hardware.ServoController> internal constructor(sdk: T) : FtcDevice<T>(sdk), ServoController {
+open class FtcServoController<T : com.qualcomm.robotcore.hardware.ServoController> internal constructor(sdk: T, opMode: OperationMode) : FtcDevice<T>(sdk, opMode), ServoController {
     override var pwm: PwmStatus
         get() = fromSdk(sdk.pwmStatus)
         set(v) { if (v == PwmStatus.Enabled) sdk.pwmEnable() else if (v == PwmStatus.Disabled) sdk.pwmDisable() }

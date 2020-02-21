@@ -2,6 +2,8 @@ package io.arct.ftclib.hardware.motors
 
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorController
+import io.arct.ftclib.eventloop.LinearOperationMode
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.ftclib.hardware.controllers.FtcMotorController
 import io.arct.ftclib.internal.fromSdk
@@ -10,7 +12,7 @@ import io.arct.robotlib.hardware.motors.Motor
 import io.arct.robotlib.hardware.motors.Motor.ZeroPowerBehavior
 import kotlin.math.abs
 
-open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>(sdk), Motor {
+open class FtcMotor<T : DcMotor> internal constructor(sdk: T, private val opMode: OperationMode) : FtcBasicMotor<T>(sdk, opMode), Motor {
     var encoder: Boolean
         get() = sdk.mode == DcMotor.RunMode.RUN_USING_ENCODER
         set(value) {
@@ -31,7 +33,7 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         get() = sdk.isBusy
 
     override val controller: FtcMotorController<DcMotorController>
-        get() = FtcMotorController(sdk.controller, port)
+        get() = FtcMotorController(sdk.controller, opMode, port)
 
     override val port: Int
         get() = sdk.portNumber
@@ -95,7 +97,11 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         }
 
         fun waitTarget(): Target {
-            while (running && motorPos < position - motor.targetPositionTolerance);
+            while (
+                (if (motor.opMode is LinearOperationMode) motor.opMode.active else true) &&
+                running && motorPos < position - motor.targetPositionTolerance
+            );
+
             return this
         }
 
@@ -121,7 +127,10 @@ open class FtcMotor<T : DcMotor> internal constructor(sdk: T) : FtcBasicMotor<T>
         }
 
         fun adjust(): Target {
-            while (running) {
+            while (
+                (if (motor.opMode is LinearOperationMode) motor.opMode.active else true) &&
+                running
+            ) {
                 if (range.contains(motor.position))
                     break
 

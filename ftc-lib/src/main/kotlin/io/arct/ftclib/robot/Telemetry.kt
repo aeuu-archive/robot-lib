@@ -1,9 +1,10 @@
 package io.arct.ftclib.robot
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode
 import io.arct.ftclib.eventloop.OperationMode
 
-class Telemetry internal constructor(private val sdk: org.firstinspires.ftc.robotcore.external.Telemetry) {
+class Telemetry internal constructor(opMode: OperationMode) {
+    private val sdk = opMode.sdk.telemetry
+
     var autoClear: Boolean
         get() = sdk.isAutoClear
         set(v) { sdk.isAutoClear = v }

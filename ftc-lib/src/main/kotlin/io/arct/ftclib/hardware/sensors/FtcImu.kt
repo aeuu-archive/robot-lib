@@ -2,11 +2,12 @@ package io.arct.ftclib.hardware.sensors
 
 import com.qualcomm.hardware.bosch.BNO055IMU
 import com.qualcomm.robotcore.hardware.I2cAddr
+import io.arct.ftclib.eventloop.OperationMode
 import io.arct.ftclib.hardware.FtcDevice
 import io.arct.robotlib.hardware.Device
 import org.firstinspires.ftc.robotcore.external.navigation.*
 
-open class FtcImu internal constructor(private val sdk: BNO055IMU) : Device {
+open class FtcImu internal constructor(private val sdk: BNO055IMU, opMode: OperationMode) : Device {
     override val name: String = sdk.systemStatus.name
     override val version: Int = 0
 

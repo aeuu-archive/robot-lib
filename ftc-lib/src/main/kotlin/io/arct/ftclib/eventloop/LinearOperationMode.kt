@@ -6,7 +6,7 @@ import io.arct.robotlib.eventloop.Program
 import kotlin.reflect.full.primaryConstructor
 
 abstract class LinearOperationMode : OperationMode(), Program {
-    private val sdk: LinearOpMode = (current as LinearOpMode?)!!
+    override val sdk: LinearOpMode = (current as LinearOpMode?)!!
 
     val started: Boolean
         get() = sdk.isStarted
